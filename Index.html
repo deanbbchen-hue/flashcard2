@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flashcards</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #ffffff;
+      --bg-secondary: #f5f5f4;
+      --bg-info:      #e6f1fb;
+      --bg-success:   #eaf3de;
+      --text-primary:   #1a1a18;
+      --text-secondary: #5f5e5a;
+      --text-tertiary:  #888780;
+      --text-info:      #185fa5;
+      --text-success:   #3b6d11;
+      --border:      rgba(0,0,0,0.13);
+      --border-md:   rgba(0,0,0,0.22);
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --font: system-ui, -apple-system, sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:           #1c1c1a;
+        --bg-secondary: #242422;
+        --bg-info:      #042c53;
+        --bg-success:   #173404;
+        --text-primary:   #f0eeea;
+        --text-secondary: #b4b2a9;
+        --text-tertiary:  #888780;
+        --text-info:      #85b7eb;
+        --text-success:   #c0dd97;
+        --border:    rgba(255,255,255,0.10);
+        --border-md: rgba(255,255,255,0.20);
+      }
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 2rem 1rem 3rem;
+    }
+
+    .app { max-width: 640px; margin: 0 auto; }
+
+    /* ── Nav tabs ── */
+    .nav {
+      display: flex;
+      gap: 4px;
+      border-bottom: 0.5px solid var(--border-md);
+      margin-bottom: 1.75rem;
+    }
+    .nav-btn {
+      padding: 8px 16px;
+      border: none;
+      background: none;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -0.5px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .nav-btn:hover { color: var(--text-primary); }
+    .nav-btn.active { color: var(--text-primary); font-weight: 500; border-bottom-color: var(--text-primary); }
+
+    /* ── Views ── */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ── Add card form ── */
+    .form-group { margin-bottom: 1rem; }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    input[type="text"], textarea {
+      width: 100%;
+      border: 0.5px solid var(--border-md);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      font-family: var(--font);
+      font-size: 14px;
+      color: var(--text-primary);
+      background: var(--bg);
+      outline: none;
+      transition: border-color 0.15s;
+      resize: vertical;
+    }
+    input[type="text"]:focus, textarea:focus { border-color: var(--text-tertiary); }
+    input[type="text"]::placeholder, textarea::placeholder { color: var(--text-tertiary); }
+    textarea { min-height: 80px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 18px;
+      border: 0.5px solid var(--border-md);
+      border-radius: var(--radius-md);
+      background: var(--bg);
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: background 0.1s, transform 0.1s;
+    }
+    .btn:hover { background: var(--bg-secondary); }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary {
+      background: var(--text-primary);
+      color: var(--bg);
+      border-color: var(--text-primary);
+    }
+    .btn-primary:hover { opacity: 0.88; background: var(--text-primary); }
+
+    .form-actions { display: flex; justify-content: flex-end; margin-top: 1.25rem; }
+
+    /* ── Card list ── */
+    .list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .list-header h2 { font-size: 16px; font-weight: 500; }
+    .badge {
+      font-size: 12px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 99px;
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+    }
+
+    .card-list { display: flex; flex-direction: column; gap: 8px; }
+    .card-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--bg);
+    }
+    .card-item-body { flex: 1; min-width: 0; }
+    .card-item-q {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card-item-a {
+      font-size: 13px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .btn-icon {
+      flex-shrink: 0;
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      border: none;
+      background: none;
+      cursor: pointer;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-tertiary);
+      transition: background 0.1s, color 0.1s;
+    }
+    .btn-icon:hover { background: var(--bg-secondary); color: var(--text-primary); }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-tertiary);
+      font-size: 14px;
+      border: 0.5px dashed var(--border-md);
+      border-radius: var(--radius-lg);
+    }
+    .empty-state i { font-size: 32px; display: block; margin-bottom: 12px; }
+
+    .quiz-launch {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 1.25rem;
+    }
+
+    /* ── Flash card / Quiz ── */
+    .quiz-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+    .progress-label { font-size: 13px; color: var(--text-secondary); }
+    .progress-bar-wrap {
+      flex: 1;
+      height: 3px;
+      background: var(--bg-secondary);
+      border-radius: 99px;
+      margin: 0 12px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: var(--text-primary);
+      border-radius: 99px;
+      transition: width 0.3s;
+    }
+
+    /* The flip card */
+    .flip-scene {
+      perspective: 1200px;
+      width: 100%;
+      height: 220px;
+      cursor: pointer;
+      margin-bottom: 1.25rem;
+    }
+    .flip-card {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.45s cubic-bezier(0.4,0,0.2,1);
+    }
+    .flip-card.flipped { transform: rotateY(180deg); }
+    .flip-face {
+      position: absolute;
+      inset: 0;
+      border: 0.5px solid var(--border-md);
+      border-radius: var(--radius-xl);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+    .flip-front {
+      background: var(--bg);
+    }
+    .flip-back {
+      background: var(--bg-info);
+      transform: rotateY(180deg);
+    }
+    .flip-eyebrow {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .flip-front .flip-eyebrow { color: var(--text-tertiary); }
+    .flip-back  .flip-eyebrow { color: var(--text-info); }
+    .flip-text {
+      font-size: 18px;
+      font-weight: 500;
+      text-align: center;
+      line-height: 1.5;
+      color: var(--text-primary);
+    }
+    .flip-back .flip-text { color: var(--text-info); }
+    .flip-hint {
+      position: absolute;
+      bottom: 14px;
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .quiz-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 1.5rem;
+    }
+
+    /* Done state */
+    .done-card {
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 2.5rem 2rem;
+      text-align: center;
+    }
+    .done-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--bg-success);
+      color: var(--text-success);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      margin: 0 auto 1rem;
+    }
+    .done-title { font-size: 18px; font-weight: 500; margin-bottom: 6px; }
+    .done-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 1.5rem; }
+    .done-actions { display: flex; gap: 8px; justify-content: center; }
+
+    .toast {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--text-primary);
+      color: var(--bg);
+      font-size: 13px;
+      padding: 7px 14px;
+      border-radius: var(--radius-md);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <div class="nav">
+    <button class="nav-btn active" onclick="switchView('add')">
+      <i class="ti ti-plus" aria-hidden="true"></i> Add card
+    </button>
+    <button class="nav-btn" onclick="switchView('list')">
+      <i class="ti ti-cards" aria-hidden="true"></i> My cards
+    </button>
+    <button class="nav-btn" onclick="startQuiz()">
+      <i class="ti ti-player-play" aria-hidden="true"></i> Quiz me
+    </button>
+  </div>
+
+  <!-- ── ADD VIEW ── -->
+  <div id="view-add" class="view active">
+    <div class="form-group">
+      <label for="inp-q">Question</label>
+      <textarea id="inp-q" placeholder="e.g. What is the powerhouse of the cell?"></textarea>
+    </div>
+    <div class="form-group">
+      <label for="inp-a">Answer</label>
+      <textarea id="inp-a" placeholder="e.g. The mitochondria"></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="addCard()">
+        <i class="ti ti-plus" aria-hidden="true" style="font-size:15px"></i>
+        Add card
+      </button>
+    </div>
+    <div id="add-toast" class="toast">Card added!</div>
+  </div>
+
+  <!-- ── LIST VIEW ── -->
+  <div id="view-list" class="view">
+    <div class="list-header">
+      <h2>My cards</h2>
+      <span class="badge" id="card-count">0 cards</span>
+    </div>
+    <div id="card-list" class="card-list"></div>
+    <div class="quiz-launch">
+      <button class="btn btn-primary" id="quiz-launch-btn" onclick="startQuiz()" disabled>
+        <i class="ti ti-player-play" aria-hidden="true" style="font-size:15px"></i>
+        Quiz me
+      </button>
+    </div>
+  </div>
+
+  <!-- ── QUIZ VIEW ── -->
+  <div id="view-quiz" class="view">
+    <div id="quiz-active">
+      <div class="quiz-meta">
+        <span class="progress-label" id="quiz-label">1 / 5</span>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar" id="quiz-bar" style="width:0%"></div>
+        </div>
+        <button class="btn" onclick="endQuiz()" style="padding:6px 12px;font-size:13px;">
+          Exit
+        </button>
+      </div>
+
+      <div class="flip-scene" onclick="flipCard()" id="flip-scene">
+        <div class="flip-card" id="flip-card">
+          <div class="flip-face flip-front">
+            <span class="flip-eyebrow">Question</span>
+            <p class="flip-text" id="quiz-question"></p>
+            <span class="flip-hint">Click to flip</span>
+          </div>
+          <div class="flip-face flip-back">
+            <span class="flip-eyebrow">Answer</span>
+            <p class="flip-text" id="quiz-answer"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="quiz-controls">
+        <button class="btn" id="btn-prev" onclick="quizNav(-1)">
+          <i class="ti ti-arrow-left" aria-hidden="true" style="font-size:15px"></i>
+          Prev
+        </button>
+        <button class="btn btn-primary" id="btn-next" onclick="quizNav(1)">
+          Next
+          <i class="ti ti-arrow-right" aria-hidden="true" style="font-size:15px"></i>
+        </button>
+      </div>
+    </div>
+
+    <div id="quiz-done" style="display:none">
+      <div class="done-card">
+        <div class="done-icon">
+          <i class="ti ti-check" aria-hidden="true"></i>
+        </div>
+        <p class="done-title">All done!</p>
+        <p class="done-sub" id="done-sub">You reviewed all 5 cards.</p>
+        <div class="done-actions">
+          <button class="btn btn-primary" onclick="restartQuiz()">
+            <i class="ti ti-refresh" aria-hidden="true" style="font-size:15px"></i>
+            Go again
+          </button>
+          <button class="btn" onclick="switchView('list')">Back to cards</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let cards = [];
+  let quizDeck = [];
+  let quizIndex = 0;
+
+  function switchView(name) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('view-' + name).classList.add('active');
+    const idx = { add: 0, list: 1, quiz: 2 }[name];
+    document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+    if (name === 'list') renderList();
+  }
+
+  function addCard() {
+    const q = document.getElementById('inp-q').value.trim();
+    const a = document.getElementById('inp-a').value.trim();
+    if (!q || !a) return;
+    cards.push({ q, a, id: Date.now() });
+    document.getElementById('inp-q').value = '';
+    document.getElementById('inp-a').value = '';
+    document.getElementById('inp-q').focus();
+    showToast('add-toast', 'Card added!');
+  }
+
+  function showToast(id, msg) {
+    const t = document.getElementById(id);
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  function renderList() {
+    const list = document.getElementById('card-list');
+    const count = document.getElementById('card-count');
+    const launchBtn = document.getElementById('quiz-launch-btn');
+    count.textContent = cards.length + ' card' + (cards.length !== 1 ? 's' : '');
+    launchBtn.disabled = cards.length === 0;
+
+    if (cards.length === 0) {
+      list.innerHTML = '<div class="empty-state"><i class="ti ti-cards" aria-hidden="true"></i>No cards yet — add one to get started.</div>';
+      return;
+    }
+    list.innerHTML = cards.map((c, i) => `
+      <div class="card-item">
+        <div class="card-item-body">
+          <div class="card-item-q">${escHtml(c.q)}</div>
+          <div class="card-item-a">${escHtml(c.a)}</div>
+        </div>
+        <button class="btn-icon" onclick="deleteCard(${i})" aria-label="Delete card">
+          <i class="ti ti-trash" aria-hidden="true" style="font-size:16px"></i>
+        </button>
+      </div>
+    `).join('');
+  }
+
+  function deleteCard(i) {
+    cards.splice(i, 1);
+    renderList();
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function startQuiz() {
+    if (cards.length === 0) { switchView('list'); return; }
+    quizDeck = [...cards].sort(() => Math.random() - 0.5);
+    quizIndex = 0;
+    document.getElementById('quiz-active').style.display = '';
+    document.getElementById('quiz-done').style.display = 'none';
+    switchView('quiz');
+    renderQuizCard();
+  }
+
+  function renderQuizCard() {
+    const card = quizDeck[quizIndex];
+    document.getElementById('quiz-question').textContent = card.q;
+    document.getElementById('quiz-answer').textContent = card.a;
+    document.getElementById('flip-card').classList.remove('flipped');
+    const n = quizDeck.length;
+    document.getElementById('quiz-label').textContent = (quizIndex + 1) + ' / ' + n;
+    document.getElementById('quiz-bar').style.width = Math.round((quizIndex / n) * 100) + '%';
+    document.getElementById('btn-prev').disabled = quizIndex === 0;
+    document.getElementById('btn-next').textContent = quizIndex === n - 1 ? 'Finish' : 'Next';
+    const nextIcon = document.getElementById('btn-next');
+    nextIcon.innerHTML = quizIndex === n - 1
+      ? 'Finish <i class="ti ti-check" aria-hidden="true" style="font-size:15px"></i>'
+      : 'Next <i class="ti ti-arrow-right" aria-hidden="true" style="font-size:15px"></i>';
+  }
+
+  function flipCard() {
+    document.getElementById('flip-card').classList.toggle('flipped');
+  }
+
+  function quizNav(dir) {
+    const next = quizIndex + dir;
+    if (next >= quizDeck.length) {
+      finishQuiz();
+      return;
+    }
+    if (next < 0) return;
+    quizIndex = next;
+    renderQuizCard();
+  }
+
+  function finishQuiz() {
+    document.getElementById('quiz-bar').style.width = '100%';
+    document.getElementById('quiz-active').style.display = 'none';
+    document.getElementById('quiz-done').style.display = '';
+    const n = quizDeck.length;
+    document.getElementById('done-sub').textContent =
+      'You reviewed all ' + n + ' card' + (n !== 1 ? 's' : '') + '.';
+  }
+
+  function restartQuiz() {
+    quizDeck = [...cards].sort(() => Math.random() - 0.5);
+    quizIndex = 0;
+    document.getElementById('quiz-active').style.display = '';
+    document.getElementById('quiz-done').style.display = 'none';
+    renderQuizCard();
+  }
+
+  function endQuiz() {
+    switchView('list');
+  }
+
+  renderList();
+</script>
+</body>
+</html>
